@@ -7,7 +7,6 @@ import {
   DescriptionListTerm,
 } from '@patternfly/react-core';
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
 import { Auction } from '@app/types';
 import { useAuth } from '@app/providers/Auth';
 import { useAuctions } from '@app/providers/Auctions';
@@ -60,7 +59,7 @@ export default ({ auction }: AuctionDescriptionListProps) => {
   return (
     <DescriptionList isHorizontal>
       <DescriptionListGroup>
-        <Image alt={`${auctionData.name}'s image`} src={auctionData.imageUrl.toString()} width={100} height={100} />
+        <img src={auctionData.imageUrl.toString()} alt={auctionData.description} />
       </DescriptionListGroup>
       <DescriptionListGroup>
         <DescriptionListTerm>
