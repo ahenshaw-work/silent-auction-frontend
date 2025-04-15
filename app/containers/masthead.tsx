@@ -27,7 +27,7 @@ import avatarImgSrc from '@patternfly/react-core/src/components/assets/avatarImg
 import { BarsIcon } from '@patternfly/react-icons/dist/esm/icons/bars-icon';
 import { EllipsisVIcon } from '@patternfly/react-icons/dist/esm/icons/ellipsis-v-icon';
 import React, { MouseEvent as ReactMouseEvent, useCallback, useState } from 'react';
-import { useAsync } from 'react-use';
+// import { useAsync } from 'react-use';
 import { useAuth } from '@app/providers/Auth';
 import { useConfig } from '@app/providers/Config';
 
@@ -54,6 +54,7 @@ export default function AppMasthead(
 
   const { user, logout } = useAuth();
   const config = useConfig();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
 
   const onDarkThemeToggleClick = () => {
@@ -92,30 +93,30 @@ export default function AppMasthead(
     [logout],
   );
 
-  const { value: avatarUrl = avatarImgSrc as string } =
-    useAsync(async (): Promise<string | undefined> => {
-      if (!user?.email) {
-        return undefined;
-      }
-
-      const hash = Array.from(
-        new Uint8Array(
-          await crypto.subtle.digest(
-            'SHA-256',
-            new TextEncoder().encode(user.email),
-          ),
-        ),
-      )
-        .map(byte => byte.toString(16).padStart(2, '0'))
-        .join('');
-
-      return `https://gravatar.com/avatar/${hash}?s=32&d=identicon`;
-    }, [user?.email]);
+  // const { value: avatarUrl = avatarImgSrc as string } =
+  //   useAsync(async (): Promise<string | undefined> => {
+  //     if (!user?.email) {
+  //       return undefined;
+  //     }
+  //
+  //     const hash = Array.from(
+  //       new Uint8Array(
+  //         await crypto.subtle.digest(
+  //           'SHA-256',
+  //           new TextEncoder().encode(user.email),
+  //         ),
+  //       ),
+  //     )
+  //       .map(byte => byte.toString(16).padStart(2, '0'))
+  //       .join('');
+  //
+  //     return `https://gravatar.com/avatar/${hash}?s=32&d=identicon`;
+  //   }, [user?.email]);
 
   const userDropdownItems = [
     <DropdownItem
       key="account"
-      // Ensure Patternfly styling is inherited
+      // Ensure PatternFly styling is inherited
       component={(props) =>
         <Content
           {...props}
@@ -218,7 +219,7 @@ export default function AppMasthead(
                       onClick={onUserDropdownToggle}
                       icon={
                         <Avatar
-                          src={avatarLoadFailed ? avatarImgSrc : avatarUrl}
+                          src={avatarImgSrc}
                           alt={`${user?.email}'s avatar image`}
                           className={"pf-v6-c-avatar pf-m-sm"}
                           style={{verticalAlign: "bottom"}}
