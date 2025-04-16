@@ -2,11 +2,12 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useApiClient,  configureHeaders } from '@app/components/ApiClient';
 import { useAuth } from '@app/providers/Auth';
+import { useConfig } from '@app/providers/Config';
 import { User, UserDTO } from '@app/types';
 
 interface UsersContextType {
   users: User[];
-  getUserDetails: (userId: string) => Promise<User>;
+  getUserDetails: (userId: string) => Promise<User | undefined>;
   loading: boolean;
   error: Error | null;
 }
@@ -32,8 +33,9 @@ export function UsersProvider({ children }: UsersProviderProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const { apiClient, isConfigured } = useApiClient();
+  const config = useConfig();
 
   const mapUser = ({
                         id,
@@ -65,17 +67,21 @@ export function UsersProvider({ children }: UsersProviderProps) {
   //   amount: bid_amount,
   // });
 
-  async function getUserDetails(userId: string): Promise<User> {
-    try {
-      if (!token) throw new Error('Authentication required');
-      if (!isConfigured) throw new Error('[UsersProvider] API client not configured yet');
+  async function getUserDetails(userId: string): Promise<User | undefined> {
+    if (!token) throw new Error('Authentication required');
+    if (!isConfigured) throw new Error('[UsersProvider] API client not configured yet');
 
-      configureHeaders(apiClient, token);
-      const response = await apiClient.get(`/api/v1/users/${userId}`);
-      return response.data.map(mapUser);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to fetch user details'));
-      throw err;
+    if (user?.groups?.includes(config.ADMIN_GROUP_NAME ? config.ADMIN_GROUP_NAME:  'admin')) {
+      try {
+        configureHeaders(apiClient, token);
+        const response = await apiClient.get(`/api/v1/users/${userId}`);
+        return response.data.map(mapUser);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error('Failed to fetch user details'));
+        throw err;
+      }
+    } else {
+      return undefined;
     }
   }
 
@@ -88,18 +94,24 @@ export function UsersProvider({ children }: UsersProviderProps) {
         return;
       }
       setLoading(true);
-      try {
-        configureHeaders(apiClient, token);
-        const response = await apiClient.get('/api/v1/users');
-        if (mounted) {
-          const mappedUsers = response.data.map(mapUser);
-          setUsers(mappedUsers);
+      if (user?.groups?.includes(config.ADMIN_GROUP_NAME ? config.ADMIN_GROUP_NAME:  'admin')) {
+        try {
+          configureHeaders(apiClient, token);
+          const response = await apiClient.get('/api/v1/users');
+          if (mounted) {
+            const mappedUsers = response.data.map(mapUser);
+            setUsers(mappedUsers);
+          }
+        } catch (err) {
+          if (mounted) {
+            setError(err instanceof Error ? err : new Error('Failed to fetch users'));
+          }
+        } finally {
+          if (mounted) {
+            setLoading(false);
+          }
         }
-      } catch (err) {
-        if (mounted) {
-          setError(err instanceof Error ? err : new Error('Failed to fetch users'));
-        }
-      } finally {
+      } else {
         if (mounted) {
           setLoading(false);
         }
