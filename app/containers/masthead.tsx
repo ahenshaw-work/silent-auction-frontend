@@ -23,7 +23,6 @@ import {
   ToolbarGroup,
   ToolbarItem,
 } from '@patternfly/react-core';
-import avatarImgSrc from '@patternfly/react-core/src/components/assets/avatarImg.svg';
 import { BarsIcon } from '@patternfly/react-icons/dist/esm/icons/bars-icon';
 import { EllipsisVIcon } from '@patternfly/react-icons/dist/esm/icons/ellipsis-v-icon';
 import React, { MouseEvent as ReactMouseEvent, useCallback, useState } from 'react';
@@ -219,13 +218,13 @@ export default function AppMasthead(
                       onClick={onUserDropdownToggle}
                       icon={
                         <Avatar
-                          src={avatarImgSrc}
+                          src={'/avatarImg.svg'}
                           alt={`${user?.email}'s avatar image`}
                           className={"pf-v6-c-avatar pf-m-sm"}
                           style={{verticalAlign: "bottom"}}
                           onError={(e) => {
                             setAvatarLoadFailed(true);
-                            e.currentTarget.src = avatarImgSrc;
+                            e.currentTarget.src = '/avatarImg.svg';
                           }}
                           isBordered
                         />
