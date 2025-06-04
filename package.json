@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@keycloak/keycloak-admin-client": "^26.2.4",
+    "@keycloak/keycloak-admin-client": "^26.2.5",
     "@patternfly/react-component-groups": "6.0.0-alpha.16",
     "@patternfly/react-core": "6.1.0",
     "@patternfly/react-icons": "6.2.2",
