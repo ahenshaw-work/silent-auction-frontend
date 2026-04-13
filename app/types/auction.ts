@@ -25,3 +25,12 @@ export type Auction = {
 export type PlaceBidRequest = {
   bid_amount: number;
 };
+
+export type CreateAuctionRequest = {
+  item_name: string;
+  description: string;
+  auction_start: string;
+  auction_end: string;
+  starting_bid: number;
+  image_path: string;
+};

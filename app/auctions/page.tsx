@@ -1,9 +1,12 @@
 'use client'
 
 import { useAuctions } from '@app/providers/Auctions';
+import { useAuth } from '@app/providers/Auth';
+import { useConfig } from '@app/providers/Config';
 // import './page.css';
 
 import {
+  Button,
   Card,
   CardBody,
   CardHeader,
@@ -11,21 +14,61 @@ import {
   Content,
   ContentVariants,
   EmptyState,
+  Flex,
+  FlexItem,
   Gallery,
   Grid,
   GridItem,
   PageSection,
 } from '@patternfly/react-core';
-
+import { useState } from 'react';
 import { redirect } from 'next/navigation';
+import CreateAuctionModal from './create-auction-modal';
+import { CreateAuctionRequest } from '@app/types';
 
 export default function Auctions() {
-  const { auctions } = useAuctions();
+  const { auctions, createAuction, loading } = useAuctions();
+  const { user } = useAuth();
+  const config = useConfig();
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const canCreateAuction = user?.groups?.some(
+    (g) => g === config.ADMIN_GROUP_NAME || g === 'auctioneer',
+  );
+
+  const handleCreateAuction = async (auction: CreateAuctionRequest) => {
+    try {
+      setIsSubmitting(true);
+      await createAuction(auction);
+      setIsCreateModalOpen(false);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <>
+      <CreateAuctionModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onCreateAuction={handleCreateAuction}
+        isSubmitting={isSubmitting}
+      />
 
         <PageSection hasBodyWrapper={false}>
-            <Content component={ContentVariants.h1}>Auctions</Content>
+          <Flex justifyContent={{ default: 'justifyContentSpaceBetween' }} alignItems={{ default: 'alignItemsCenter' }}>
+            <FlexItem>
+              <Content component={ContentVariants.h1}>Auctions</Content>
+            </FlexItem>
+            {canCreateAuction && (
+              <FlexItem>
+                <Button variant="primary" onClick={() => setIsCreateModalOpen(true)}>
+                  Create Auction
+                </Button>
+              </FlexItem>
+            )}
+          </Flex>
         </PageSection>
         <PageSection hasBodyWrapper={false} className="auctions-page" isFilled>
           {auctions.length === 0 ? (

@@ -189,7 +189,7 @@ export default function AuctionDetailsPage() {
     }
   ]
 
-  if (user?.groups?.includes(config.ADMIN_GROUP_NAME ? config.ADMIN_GROUP_NAME:  'admin')) {
+  if (user?.groups?.includes(config.ADMIN_GROUP_NAME ? config.ADMIN_GROUP_NAME :  'admin')) {
     tabs.push(
       {
         eventKey: 'bids',

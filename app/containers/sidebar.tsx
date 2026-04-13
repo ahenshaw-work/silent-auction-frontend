@@ -52,7 +52,7 @@ export default function AppSideBar({
             >
               <Link href="/auctions"><Content component={ContentVariants.p}>Auctions</Content></Link>
             </NavItem>
-            {user?.groups?.includes(config.ADMIN_GROUP_NAME ? config.ADMIN_GROUP_NAME:  'admin') ? (
+            {user?.groups?.includes(config.ADMIN_GROUP_NAME ? config.ADMIN_GROUP_NAME :  'admin') ? (
               <>
                 <NavItem
                   id="nav-sidebar-link-highest-bids"

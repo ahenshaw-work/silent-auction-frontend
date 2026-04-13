@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { useApiClient, configureHeaders } from '@app/components/ApiClient';
 import { useAuth } from '@app/providers/Auth';
-import { Auction, AuctionDTO, Bid, BidDTO, PlaceBidRequest } from '@app/types';
+import { Auction, AuctionDTO, Bid, BidDTO, PlaceBidRequest, CreateAuctionRequest } from '@app/types';
 
 type AuctionBids = {
   auction: string;
@@ -18,6 +18,7 @@ interface AuctionsContextType {
   getBidsForAuction: (auctionId: string) => Bid[];
   fetchBidsForAuction: (auctionId: string) => Promise<void>;
   placeBid: (auctionId: string, bid: PlaceBidRequest) => Promise<void>;
+  createAuction: (auction: CreateAuctionRequest) => Promise<void>;
   loading: boolean;
   error: Error | null;
 }
@@ -157,6 +158,21 @@ export default function AuctionsProvider({ children }: { children: ReactNode }) 
     }
   }
 
+  async function createAuction(auction: CreateAuctionRequest): Promise<void> {
+    if (!token) throw new Error('Authentication required');
+    if (!isConfigured) throw new Error('API client not configured yet');
+
+    try {
+      configureHeaders(apiClient, token);
+      await apiClient.post('/api/v1/auctions', auction);
+      const response = await apiClient.get('/api/v1/auctions');
+      setAuctions(response.data.map(mapAuction));
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to create auction'));
+      throw err;
+    }
+  }
+
   // Fetch all auctions
   useEffect(() => {
     const fetchAuctions = async () => {
@@ -193,6 +209,7 @@ export default function AuctionsProvider({ children }: { children: ReactNode }) 
     getBidsForAuction,
     fetchBidsForAuction,
     placeBid,
+    createAuction,
     loading,
     error
   };
