@@ -1,61 +1,31 @@
 'use client'
-import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
-import { useEffect, useState, useMemo } from "react";
-import { useConfig } from '@app/providers/Config';
+import axios from 'axios';
+import { useMemo } from 'react';
+import type { RefObject } from 'react';
 
-// Create a base instance without baseURL for initialization purposes
-const createApiInstance = (baseURL = '') => {
-  return axios.create({ baseURL });
-};
-
-// Default instance with empty baseURL
-const defaultApiClient = createApiInstance();
-
-export function useApiClient() {
-  const config = useConfig();
-  const [isConfigured, setIsConfigured] = useState(false);
-
-  // Create a new instance when the baseURL changes
+/**
+ * Returns an Axios instance that sends requests to the same origin.
+ * All /api/v1/* calls are transparently proxied server-side to BACKEND_URL,
+ * so that URL never needs to reach the browser.
+ *
+ * A single request interceptor is registered at instance creation time. It
+ * reads the latest token from `tokenRef.current` synchronously at request
+ * time, so a refreshed token is always used even if React state hasn't
+ * re-rendered yet.
+ */
+export function useApiClient(tokenRef: RefObject<string | null>) {
   const apiClient = useMemo(() => {
-    if (!config.BACKEND_URL) {
-      console.debug('No BACKEND_URL available yet');
-      return defaultApiClient;
-    }
-    return createApiInstance(config.BACKEND_URL);
-  }, [config.BACKEND_URL]);
-
-  // Track configuration status
-  useEffect(() => {
-    if (config.BACKEND_URL) {
-      setIsConfigured(true);
-    } else {
-      setIsConfigured(false);
-    }
-  }, [config.BACKEND_URL]);
-
-  return { apiClient, isConfigured };
-}
-
-export const configureHeaders = (apiClient: AxiosInstance, token: string | null) => {
-  if (!apiClient || !token) return;
-
-  const interceptorId = apiClient.interceptors.request.use(
-    async (config: InternalAxiosRequestConfig) => {
-      config.headers = config.headers || {};
-      config.headers.Authorization = config.headers.Authorization || `Bearer ${token}`;
+    const instance = axios.create();
+    instance.interceptors.request.use((config) => {
+      const token = tokenRef.current;
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
       return config;
-    },
-    (error) => {
-      console.error("Request interceptor error:", error);
-      return Promise.reject(error);
-    }
-  );
+    });
+    return instance;
+    // tokenRef is a stable ref object — intentionally omitted from deps
+  }, []);
 
-  // Return a function to eject the interceptor if needed
-  return () => {
-    apiClient.interceptors.request.eject(interceptorId);
-  };
-};
-
-// Export the default client for compatibility, but recommend using the hook
-export default defaultApiClient;
+  return { apiClient, isConfigured: true as const };
+}

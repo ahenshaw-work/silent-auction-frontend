@@ -11,7 +11,7 @@ export type User = {
   username: string;
   firstName: string;
   lastName: string;
-  tableNumber: string;
+  tableNumber: number;
 };
 
 export type CreateMeRequest = {

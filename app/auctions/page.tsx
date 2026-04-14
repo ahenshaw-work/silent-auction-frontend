@@ -27,7 +27,7 @@ import CreateAuctionModal from './create-auction-modal';
 import { CreateAuctionRequest } from '@app/types';
 
 export default function Auctions() {
-  const { auctions, createAuction, loading } = useAuctions();
+  const { auctions, createAuction } = useAuctions();
   const { user } = useAuth();
   const config = useConfig();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);

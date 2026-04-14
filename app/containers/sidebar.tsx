@@ -27,6 +27,7 @@ export default function AppSideBar({
 
   const { user } = useAuth();
   const config = useConfig();
+  const pathname = usePathname();
   const onSidebarToggle = useCallback(() => {
     setSidebarOpen(!isSidebarOpen);
   }, [isSidebarOpen, setSidebarOpen]);
@@ -38,33 +39,34 @@ export default function AppSideBar({
           <NavList>
             <NavItem
               id="nav-sidebar-link-home"
-              itemID="1"
-              isActive={usePathname() === '/'}
+              itemID="home"
+              isActive={pathname === '/'}
               onClick={onSidebarToggle}
             >
               <Link href="/"><Content component={ContentVariants.p}>Home</Content></Link>
             </NavItem>
             <NavItem
               id="nav-sidebar-link-auctions"
-              itemID="1"
-              isActive={usePathname().startsWith('/auctions')}
+              itemID="auctions"
+              isActive={pathname.startsWith('/auctions')}
               onClick={onSidebarToggle}
             >
               <Link href="/auctions"><Content component={ContentVariants.p}>Auctions</Content></Link>
             </NavItem>
-            {user?.groups?.includes(config.ADMIN_GROUP_NAME ? config.ADMIN_GROUP_NAME :  'admin') ? (
+            {user?.groups?.includes(config.ADMIN_GROUP_NAME ? config.ADMIN_GROUP_NAME : 'admin') ? (
               <>
                 <NavItem
                   id="nav-sidebar-link-highest-bids"
-                  itemID="1"
-                  isActive={usePathname().startsWith('/highest-bids')}
+                  itemID="highest-bids"
+                  isActive={pathname.startsWith('/highest-bids')}
                   onClick={onSidebarToggle}
                 >
                   <Link href="/highest-bids"><Content component={ContentVariants.p}>Highest Bids</Content></Link>
-                </NavItem><NavItem
+                </NavItem>
+                <NavItem
                   id="nav-sidebar-link-users"
-                  itemID="1"
-                  isActive={usePathname().startsWith('/users')}
+                  itemID="users"
+                  isActive={pathname.startsWith('/users')}
                   onClick={onSidebarToggle}
                 >
                   <Link href="/users"><Content component={ContentVariants.p}>Users</Content></Link>

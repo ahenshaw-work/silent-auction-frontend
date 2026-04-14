@@ -9,29 +9,26 @@ components:
       mountSources: true
       sourceMapping: /projects
       memoryLimit: 8G
-      env:
-        - name: MODERN_ENV
-          value: devspaces
       endpoints:
         - exposure: public
           name: nodejs
           protocol: https
-          targetPort: 8080
+          targetPort: 3000
       command:
         - sleep
         - infinity
 commands:
   - exec:
-      commandLine: pnpm install && pnpm extract-messages && pnpm compile-messages
+      commandLine: npm install
       component: nodejs
       label: Install
       workingDir: '${PROJECTS_ROOT}/silent-auction-frontend'
     id: 1-install
   - exec:
-      commandLine: export MODERN_ENV=devspaces && pnpm dev
+      commandLine: npm run dev
       component: nodejs
       group:
         kind: run
       label: Start dev server
-      workingDir: '${PROJECTS_ROOT}/silent-auction-demo-frontend'
+      workingDir: '${PROJECTS_ROOT}/silent-auction-frontend'
     id: 2-dev

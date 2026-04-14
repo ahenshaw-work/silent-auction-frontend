@@ -1,11 +1,11 @@
-import React, { useEffect, useState, createContext, useContext, ReactNode } from "react";
+import React, { useEffect, useRef, useState, createContext, useContext, ReactNode } from "react";
 // @ts-expect-error Need to define Keycloak Types using the admin client
 import Keycloak, { KeycloakConfig } from "keycloak-js";
 import { useConfig } from '@app/providers/Config';
 
 import { jwtDecode } from "jwt-decode";
 
-import { useApiClient, configureHeaders } from '@app/components/ApiClient';
+import { useApiClient } from '@app/components/ApiClient';
 
 // -------- Context Setup -------- //
 type AuthContextValue = {
@@ -44,7 +44,12 @@ type BackendUserProfile = {
 
 const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const config = useConfig();
-  const { apiClient, isConfigured } = useApiClient();
+
+  // tokenRef is read synchronously by the Axios interceptor at request time,
+  // ensuring a refreshed token is always used regardless of render cycle timing.
+  const tokenRef = useRef<string | null>(null);
+  const { apiClient, isConfigured } = useApiClient(tokenRef);
+
   const [keycloak, setKeycloak] = useState<Keycloak | null>(null);
   const [isConfigValid, setIsConfigValid] = useState(false);
   const [isConfigChecked, setIsConfigChecked] = useState(false);
@@ -54,6 +59,11 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<KeycloakTokenPayload | null>(null);
   const [isAuthInitialized, setIsAuthInitialized] = useState(false);
   const [backendUserProfile, setBackendUserProfile] = useState<BackendUserProfile | null>(null);
+
+  const setTokenBoth = (value: string | null) => {
+    tokenRef.current = value;
+    setToken(value);
+  };
 
   useEffect(() => {
     const valid = !!(
@@ -87,10 +97,10 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const fetchBackendUserProfile = async (token: string) => {
+  const fetchBackendUserProfile = async () => {
     try {
-      configureHeaders(apiClient, token);
       if (!isConfigured) throw new Error('API client not configured yet');
+      if (!tokenRef.current) throw new Error('Authentication required');
 
       const response = await apiClient.get(`/api/v1/me`);
       if (response.status === 200 || response.status === 201) {
@@ -120,7 +130,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (authenticated) {
         setIsAuthenticated(true);
-        setToken(keycloak.token);
+        setTokenBoth(keycloak.token ?? null);
         decodeToken(keycloak.token);
       } else {
         console.info("User is not logged in");
@@ -140,9 +150,9 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       await keycloak.login({
         prompt: "login",
-      }); // Triggers the Keycloak login flow
+      });
       setIsAuthenticated(true);
-      setToken(keycloak.token);
+      setTokenBoth(keycloak.token ?? null);
     } catch (error) {
       console.error("Login error:", error);
     }
@@ -155,18 +165,18 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return;
       }
       await keycloak.logout({
-        redirectUri: window.location.origin, // Redirect to home after logout
+        redirectUri: window.location.origin,
       });
       setIsAuthenticated(false);
-      setToken(null);
+      setTokenBoth(null);
     } catch (error) {
       console.error("Logout error:", error);
     }
   };
 
   useEffect(() => {
-    if (user && token) {
-      fetchBackendUserProfile(token);
+    if (user && tokenRef.current) {
+      fetchBackendUserProfile();
     }
   }, [user, token]);
 
@@ -186,7 +196,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       const refreshed: boolean = await keycloak.updateToken(90);
       if (refreshed) {
-        setToken(keycloak.token);
+        setTokenBoth(keycloak.token ?? null);
         decodeToken(keycloak.token);
       }
     } catch (error) {

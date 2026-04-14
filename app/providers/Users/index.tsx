@@ -1,6 +1,6 @@
 'use client'
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { useApiClient,  configureHeaders } from '@app/components/ApiClient';
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
+import { useApiClient } from '@app/components/ApiClient';
 import { useAuth } from '@app/providers/Auth';
 import { useConfig } from '@app/providers/Config';
 import { User, UserDTO } from '@app/types';
@@ -12,10 +12,8 @@ interface UsersContextType {
   error: Error | null;
 }
 
-// Create the context with a default value
 const UsersContext = createContext<UsersContextType | undefined>(undefined);
 
-// Custom hook to use the auctions context
 export function useUsers() {
   const context = useContext(UsersContext);
   if (context === undefined) {
@@ -34,48 +32,36 @@ export function UsersProvider({ children }: UsersProviderProps) {
   const [error, setError] = useState<Error | null>(null);
 
   const { token, user } = useAuth();
-  const { apiClient, isConfigured } = useApiClient();
+  // Keep token in a ref so the Axios interceptor always reads the latest value
+  // at request time, avoiding stale-closure issues from React state.
+  const tokenRef = useRef<string | null>(token);
+  useEffect(() => { tokenRef.current = token; }, [token]);
+
+  const { apiClient, isConfigured } = useApiClient(tokenRef);
   const config = useConfig();
 
   const mapUser = ({
-                        id,
-                        username,
-                        first_name,
-                        last_name,
-                        table_number,
-                      }: UserDTO): { id: string; username: string, firstName: string; lastName: string; tableNumber: number } => {
-    return {
-      id: id.toString(),
-      username: username,
-      firstName: first_name,
-      lastName: last_name,
-      tableNumber: table_number,
-    };
-  };
-
-  // const mapBid = ({
-  //                   id,
-  //                   auction_id,
-  //                   user_id,
-  //                   bid_time,
-  //                   bid_amount,
-  //                 }: BidDTO): Bid => ({
-  //   id,
-  //   auctionId: auction_id.toString(),
-  //   userId: user_id.toString(),
-  //   time: new Date(bid_time),
-  //   amount: bid_amount,
-  // });
+    id,
+    username,
+    first_name,
+    last_name,
+    table_number,
+  }: UserDTO): User => ({
+    id: id.toString(),
+    username,
+    firstName: first_name,
+    lastName: last_name,
+    tableNumber: table_number,
+  });
 
   async function getUserDetails(userId: string): Promise<User | undefined> {
-    if (!token) throw new Error('Authentication required');
+    if (!tokenRef.current) throw new Error('Authentication required');
     if (!isConfigured) throw new Error('[UsersProvider] API client not configured yet');
 
-    if (user?.groups?.includes(config.ADMIN_GROUP_NAME ? config.ADMIN_GROUP_NAME:  'admin')) {
+    if (user?.groups?.includes(config.ADMIN_GROUP_NAME ? config.ADMIN_GROUP_NAME : 'admin')) {
       try {
-        configureHeaders(apiClient, token);
         const response = await apiClient.get(`/api/v1/users/${userId}`);
-        return response.data.map(mapUser);
+        return mapUser(response.data);
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Failed to fetch user details'));
         throw err;
@@ -89,14 +75,13 @@ export function UsersProvider({ children }: UsersProviderProps) {
   useEffect(() => {
     let mounted = true;
     const getUsers = async () => {
-      if (!token || !mounted || !isConfigured ){
+      if (!token || !mounted || !isConfigured) {
         console.debug('[UsersProvider] API client not configured yet, skipping users fetch');
         return;
       }
       setLoading(true);
-      if (user?.groups?.includes(config.ADMIN_GROUP_NAME ? config.ADMIN_GROUP_NAME:  'admin')) {
+      if (user?.groups?.includes(config.ADMIN_GROUP_NAME ? config.ADMIN_GROUP_NAME : 'admin')) {
         try {
-          configureHeaders(apiClient, token);
           const response = await apiClient.get('/api/v1/users');
           if (mounted) {
             const mappedUsers = response.data.map(mapUser);
@@ -124,8 +109,6 @@ export function UsersProvider({ children }: UsersProviderProps) {
       mounted = false;
     };
   }, [token, isConfigured]);
-
-
 
   const value = {
     users,
